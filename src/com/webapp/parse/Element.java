@@ -33,5 +33,18 @@ public class Element {
 	public void setOpenedAndClosed(boolean openedAndClosed) {
 		this.openedAndClosed = openedAndClosed;
 	}
+	public String toString(){
+		String result = "";
+		result += "<" + qName + " ";
+		if(attrs != null){
+			for(Attribute attr : attrs){
+				result += attr.getName() + "=\"" + attr.getValue() + "\" ";
+			}
+		}
+		if(openedAndClosed)
+			result += "/";
+		result += ">"; 
+		return result;
+	}
 
 }

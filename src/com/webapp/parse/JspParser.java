@@ -188,6 +188,7 @@ public class JspParser {
 						attr.setName(name.toString());
 						break;
 					case ' ':
+					case '\r':
 						if(attr.getName() != null && attr.getName().length() > 0 
 							&& value.toString().trim().length() > 0){
 							attr.setValue(value.toString());
