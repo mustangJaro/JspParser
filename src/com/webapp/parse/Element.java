@@ -38,7 +38,7 @@ public class Element {
 		result += "<" + qName + " ";
 		if(attrs != null){
 			for(Attribute attr : attrs){
-				result += attr.getName() + "=\"" + attr.getValue() + "\" ";
+				result += attr.toString();
 			}
 		}
 		if(openedAndClosed)
