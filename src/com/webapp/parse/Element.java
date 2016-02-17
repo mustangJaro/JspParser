@@ -35,10 +35,10 @@ public class Element {
 	}
 	public String toString(){
 		String result = "";
-		result += "<" + qName + " ";
+		result += "<" + qName;
 		if(attrs != null){
 			for(Attribute attr : attrs){
-				result += attr.toString();
+				result += " " + attr.toString();
 			}
 		}
 		if(openedAndClosed)
