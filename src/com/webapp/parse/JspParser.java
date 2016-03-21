@@ -14,14 +14,8 @@ import java.util.List;
  *
  */
 public class JspParser {
-	public enum TAG_TYPE{
-		STANDARD,
-		JSP,
-		META,
-		DOCTYPE,
-		COMMENT
-	}
 	private BufferedReader br;
+	private int lineNumber = 0;
 	
 	/**
 	 * This method is the one to be used to run through a file
@@ -33,14 +27,15 @@ public class JspParser {
 	public void parse(File inputFile, ParserHandler handler) throws IOException{
 		
 		br = new BufferedReader(new FileReader(inputFile)); 
+		handler.startFile(inputFile.getName());
 
 		int c;
-		StringBuilder response = new StringBuilder();
-		boolean lookAtValue = false;
+		boolean inJavaScript = false;
 		StringBuilder elValue = new StringBuilder();
 		
 		while ((c = br.read()) != -1) {
 			char ch = (char) c;
+			
 			switch(ch){
 			case '<':
 				br.mark(2);
@@ -48,41 +43,50 @@ public class JspParser {
 				br.reset();
 				if(next == '/'){
 					if(elValue.toString().trim().length() > 0){
-						handler.elementValue(elValue.toString().trim());
+						handler.elementValue(elValue.toString());
 						elValue = new StringBuilder();
 					}else if(elValue.toString().length() > 0){
 						handler.showWhitespace(elValue.toString());
 						elValue = new StringBuilder();
 					}
 					Element el = parseCloseTag();
+					el.setLineNumber(lineNumber);
 					handler.endElement(el);
-				}else{
+					
+					inJavaScript = false;
+				}else if(!inJavaScript){
 					if(elValue.toString().trim().length() > 0){
-						handler.elementValue(elValue.toString().trim());
+						handler.elementValue(elValue.toString());
 						elValue = new StringBuilder();
 					}else if(elValue.toString().length() > 0){
 						handler.showWhitespace(elValue.toString());
 						elValue = new StringBuilder();
 					}
 					Element el = parseOpenTag();
-					
+					el.setLineNumber(lineNumber);					
 					handler.startElement(el);
 					
-					if(el.isOpenedAndClosed() || !el.getTagType().equals(TAG_TYPE.STANDARD)){
+					if(el.getTagType().equals(TAG_TYPE.SCRIPT))
+						inJavaScript = true;
+					
+					if(el.isOpenedAndClosed() || !(el.getTagType().equals(TAG_TYPE.STANDARD) || el.getTagType().equals(TAG_TYPE.SCRIPT))){
 						handler.endElement(el);
-					}else{
-						lookAtValue = true;
+						inJavaScript = false;
 					}
-				}
-				break;
-			default:
-				if(lookAtValue){
+				}else if(inJavaScript){
+					if(ch == '\n' || ch == '\r')
+						lineNumber++;
 					elValue.append(ch);
 				}
 				break;
+			default:
+				if(ch == '\n' || ch == '\r')
+					lineNumber++;
+				elValue.append(ch);
+				break;
 			}
-		    response.append(ch) ; 
 		}
+		handler.endFile(inputFile.getName());
 		
 		br.close();		
 	}
@@ -118,6 +122,12 @@ public class JspParser {
 				tagType = TAG_TYPE.DOCTYPE;
 				br.reset();
 			}
+		}else if(ch == 's'){
+			br.mark(6);
+			if(((char) br.read()) == 'c' && ((char) br.read()) == 'r' && ((char) br.read()) == 'i' && ((char) br.read()) == 'p' && ((char) br.read()) == 't'){
+				tagType = TAG_TYPE.SCRIPT;
+			}
+			br.reset();
 		}
 		
 		
@@ -138,7 +148,12 @@ public class JspParser {
 					inQuotes = !inQuotes;
 					break;
 				default:
-					qName.append(ch);
+					if(ch == '\n' || ch == '\r'){
+						lineNumber++;
+						el = parseAttributes(tagType);
+						reachedEndOfTag = true;
+					}else
+						qName.append(ch);
 					break;
 				}
 				ch = (char) br.read();
@@ -169,7 +184,7 @@ public class JspParser {
 		List<Attribute> attrs = new ArrayList<Attribute>();
 		char ch = (char) br.read();
 		while(!reachedEndOfTag){
-			if(ch == '>'){
+			if(!inQuotes && ch == '>'){
 				reachedEndOfTag = true;
 				if(tagType.equals(TAG_TYPE.DOCTYPE) && name.toString().trim().length() > 0){
 					attr.setName(name.toString());
@@ -203,6 +218,7 @@ public class JspParser {
 							attrs.add(attr);
 							attr = new Attribute();
 						}
+						lineNumber++;
 						break;
 					case '/':
 						el.setOpenedAndClosed(true);
@@ -211,6 +227,8 @@ public class JspParser {
 						inQuotes = !inQuotes;
 						break;
 					default:
+						if(ch == '\n')
+							lineNumber++;
 						if(attr.getName() == null || attr.getName().length() == 0)
 							name.append(ch);
 						else
@@ -256,6 +274,8 @@ public class JspParser {
 			if(ch == '>'){
 				reachedEndOfTag = true;
 			}else{
+				if(ch == '\n' || ch == '\r')
+					lineNumber++;
 				qName.append(ch);
 				ch = (char) br.read();
 			}
@@ -283,6 +303,8 @@ public class JspParser {
 			if(ch == '>'){
 				reachedEndOfTag = true;
 			}else{
+				if(ch == '\n' || ch == '\r')
+					lineNumber++;
 				comment.append(ch);
 				ch = (char) br.read();
 			}
