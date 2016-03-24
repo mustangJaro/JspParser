@@ -15,7 +15,7 @@ import java.util.List;
  */
 public class JspParser {
 	private BufferedReader br;
-	private int lineNumber = 0;
+	private int lineNumber = 1;
 	
 	/**
 	 * This method is the one to be used to run through a file
@@ -74,13 +74,13 @@ public class JspParser {
 						inJavaScript = false;
 					}
 				}else if(inJavaScript){
-					if(ch == '\n' || ch == '\r')
+					if(ch == '\n')
 						lineNumber++;
 					elValue.append(ch);
 				}
 				break;
 			default:
-				if(ch == '\n' || ch == '\r')
+				if(ch == '\n')
 					lineNumber++;
 				elValue.append(ch);
 				break;
@@ -148,7 +148,7 @@ public class JspParser {
 					inQuotes = !inQuotes;
 					break;
 				default:
-					if(ch == '\n' || ch == '\r'){
+					if(ch == '\n'){
 						lineNumber++;
 						el = parseAttributes(tagType);
 						reachedEndOfTag = true;
@@ -218,7 +218,6 @@ public class JspParser {
 							attrs.add(attr);
 							attr = new Attribute();
 						}
-						lineNumber++;
 						break;
 					case '/':
 						el.setOpenedAndClosed(true);
@@ -235,9 +234,16 @@ public class JspParser {
 							value.append(ch);
 						break;
 					}
-				}else if(ch == '"')
+				}else if(ch == '"'){
 					inQuotes = !inQuotes;
-				else if(tagType.equals(TAG_TYPE.DOCTYPE)){
+					if(attr.getName() != null && attr.getName().length() > 0){
+						attr.setValue(value.toString());
+						value = new StringBuilder();
+						name = new StringBuilder();
+						attrs.add(attr);
+						attr = new Attribute();
+					}
+				}else if(tagType.equals(TAG_TYPE.DOCTYPE)){
 					name.append(ch);
 				}else
 					value.append(ch);
@@ -274,7 +280,7 @@ public class JspParser {
 			if(ch == '>'){
 				reachedEndOfTag = true;
 			}else{
-				if(ch == '\n' || ch == '\r')
+				if(ch == '\n')
 					lineNumber++;
 				qName.append(ch);
 				ch = (char) br.read();
@@ -303,7 +309,7 @@ public class JspParser {
 			if(ch == '>'){
 				reachedEndOfTag = true;
 			}else{
-				if(ch == '\n' || ch == '\r')
+				if(ch == '\n')
 					lineNumber++;
 				comment.append(ch);
 				ch = (char) br.read();
