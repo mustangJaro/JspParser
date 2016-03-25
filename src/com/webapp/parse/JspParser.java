@@ -301,19 +301,22 @@ public class JspParser {
 		Element el = new Element();
 
 		boolean reachedEndOfTag = false;
+		int consecutiveDashCount = 0;
 		StringBuilder comment = new StringBuilder();
 		br.read();
 		char ch = (char) br.read();
 		
 		while(!reachedEndOfTag){
-			if(ch == '>'){
+			if(ch == '>' && consecutiveDashCount > 1){
 				reachedEndOfTag = true;
-			}else{
-				if(ch == '\n')
-					lineNumber++;
-				comment.append(ch);
-				ch = (char) br.read();
+				break;
+			}else if(ch == '-'){
+				consecutiveDashCount++;
 			}
+			if(ch == '\n')
+				lineNumber++;
+			comment.append(ch);
+			ch = (char) br.read();
 		}
 		
 		String com = comment.toString();
