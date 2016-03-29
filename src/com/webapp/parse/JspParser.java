@@ -28,6 +28,7 @@ public class JspParser {
 		
 		br = new BufferedReader(new FileReader(inputFile)); 
 		handler.startFile(inputFile.getName());
+		lineNumber = 1;
 
 		int c;
 		boolean inJavaScript = false;
