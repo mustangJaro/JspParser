@@ -153,6 +153,7 @@ public class JspParser {
 						lineNumber++;
 						el = parseAttributes(tagType);
 						reachedEndOfTag = true;
+						continue;
 					}else
 						qName.append(ch);
 					break;
